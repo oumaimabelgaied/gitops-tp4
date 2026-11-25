@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 93.11.0
+    helm:
+      valuesObject:
+        # Composants non exposés sur kind : évite de fausses alertes
+        kubeEtcd: { enabled: false }
+        kubeScheduler: { enabled: false }
+        kubeControllerManager: { enabled: false }
+        kubeProxy: { enabled: false }
+        prometheus:
+          prometheusSpec:
+            # Prometheus scrape TOUS les ServiceMonitors, pas seulement ceux du chart
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            retention: 2d
+            resources:
+              requests: { cpu: 100m, memory: 400Mi }
+        grafana:
+          sidecar:
+            dashboards:
+              enabled: true
+              searchNamespace: ALL
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
