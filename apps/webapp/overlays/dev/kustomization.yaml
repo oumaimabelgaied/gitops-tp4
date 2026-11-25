@@ -5,7 +5,7 @@ resources:
   - ../../base
 images:
   - name: nginx
-    newTag: "1.25"
+    newTag: "1.99.99-inexistant"
 patches:
   - target:
       kind: Deployment
