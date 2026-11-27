@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    targetRevision: 93.11.0
+    targetRevision: "93.11.0"
     helm:
       valuesObject:
         # Composants non exposés sur kind : évite de fausses alertes
@@ -30,6 +30,23 @@ spec:
             dashboards:
               enabled: true
               searchNamespace: ALL
+          # Sondes assouplies : Grafana démarre lentement sur kind
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
