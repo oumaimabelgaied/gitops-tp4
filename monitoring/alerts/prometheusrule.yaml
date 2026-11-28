@@ -1,0 +1,45 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gitops-tp4-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: gitops-tp4
+spec:
+  groups:
+    - name: gitops.argocd
+      rules:
+        - alert: ArgoCDAppDegraded
+          expr: argocd_app_info{health_status="Degraded"} > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Application ArgoCD {{ $labels.name }} en etat Degraded"
+            description: "L'application {{ $labels.name }} est Degraded depuis plus de 2 minutes."
+        - alert: ArgoCDAppOutOfSync
+          expr: argocd_app_info{sync_status="OutOfSync"} > 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Application ArgoCD {{ $labels.name }} OutOfSync"
+            description: "L'application {{ $labels.name }} est OutOfSync depuis plus de 2 minutes."
+    - name: gitops.workloads
+      rules:
+        - alert: WebappImagePullBackOff
+          expr: sum by (namespace, pod) (kube_pod_container_status_waiting_reason{namespace="webapp-dev", reason=~"ImagePullBackOff|ErrImagePull"}) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} bloque en ImagePullBackOff"
+            description: "Le pod {{ $labels.pod }} ne parvient pas a tirer son image."
+        - alert: WebappReplicasUnavailable
+          expr: kube_deployment_status_replicas_unavailable{namespace="webapp-dev", deployment="webapp"} > 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Replicas indisponibles pour webapp"
+            description: "Au moins un replica de webapp est indisponible depuis plus de 2 minutes."
